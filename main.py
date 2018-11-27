@@ -1,4 +1,7 @@
 import tensorflow as tf
+import numpy as np
+
+from PIL import Image, ImageDraw
 from tensorflow.python import pywrap_tensorflow
 
 
@@ -13,14 +16,49 @@ def show_tensor_by_ckpt(file_name):
 def main():
     graph = tf.Graph()
 
+    # image = Image.open('street.jpg')
+    image = Image.open('3_persons.jpg')
+    image = np.asarray(image)
+
     with tf.Session(graph=graph) as sess:
         tf.Variable([1], tf.float32)
 
         # show_tensor_by_ckpt('models/ssd_mobilenet_v2_coco_2018_03_29/models.ckpt')
-        saver = tf.train.import_meta_graph('models/ssd_mobilenet_v2_coco_2018_03_29/models.ckpt.meta')
-        saver.restore(sess, 'models/ssd_mobilenet_v2_coco_2018_03_29/models.ckpt')
+        saver = tf.train.import_meta_graph('models/ssd_mobilenet_v2_coco_2018_03_29/model.ckpt.meta')
+        saver.restore(sess, 'models/ssd_mobilenet_v2_coco_2018_03_29/model.ckpt')
 
         # tf.summary.FileWriter("tensor_board/", graph=graph)
+
+        input_image = graph.get_tensor_by_name('image_tensor:0')
+
+        boxes_t = graph.get_tensor_by_name('detection_boxes:0')
+        scores_t = graph.get_tensor_by_name('detection_scores:0')
+        num_dets_t = graph.get_tensor_by_name('num_detections:0')
+        classes_t = graph.get_tensor_by_name('detection_classes:0')
+
+        locations, scores, num_dets, classes= sess.run([boxes_t, scores_t, num_dets_t, classes_t],
+                                                       feed_dict={input_image: np.expand_dims(image, 0)})
+        locations = locations[0]
+
+        print(str(scores))
+        print(str(num_dets))
+        print(str(classes))
+
+        result = Image.fromarray(image)
+
+        draw = ImageDraw.Draw(result)
+        h, w, _ = image.shape
+        for index, location in enumerate(locations):
+            if classes[0][index] != 1:  # filter person
+                continue
+            if scores[0][index] < 0.65:
+                continue
+            point_1 = (int(location[1]*w), int(location[0]*h))
+            point_2 = (int(location[3]*w), int(location[2]*h))
+            draw.rectangle((point_1, point_2), width=2)
+            draw.text(point_1, str(index), fill='red')
+
+        result.show()
 
 
 if __name__ == '__main__':
