@@ -13,6 +13,25 @@ def show_tensor_by_ckpt(file_name):
         print("tensor_name: ", key)
 
 
+def display_ui(image, locations, classes, scores):
+    result = Image.fromarray(image)
+
+    draw = ImageDraw.Draw(result)
+    h, w, _ = image.shape
+    font = ImageFont.truetype("fonts/Raleway-Regular.ttf", 24)
+    for index, location in enumerate(locations):
+        if classes[0][index] != 1:  # filter person
+            continue
+        if scores[0][index] < 0.65:
+            continue
+        point_1 = (int(location[1] * w), int(location[0] * h))
+        point_2 = (int(location[3] * w), int(location[2] * h))
+        draw.rectangle((point_1, point_2), outline='green')
+        draw.text(point_1, str(index), font=font, fill='red')
+
+    result.show()
+
+
 def main():
     graph = tf.Graph()
 
@@ -40,26 +59,7 @@ def main():
                                                         feed_dict={input_image: np.expand_dims(image, 0)})
         locations = locations[0]
 
-        print(str(scores))
-        print(str(num_dets))
-        print(str(classes))
-
-        result = Image.fromarray(image)
-
-        draw = ImageDraw.Draw(result)
-        h, w, _ = image.shape
-        font = ImageFont.truetype("fonts/Raleway-Regular.ttf", 24)
-        for index, location in enumerate(locations):
-            if classes[0][index] != 1:  # filter person
-                continue
-            if scores[0][index] < 0.65:
-                continue
-            point_1 = (int(location[1] * w), int(location[0] * h))
-            point_2 = (int(location[3] * w), int(location[2] * h))
-            draw.rectangle((point_1, point_2), outline='green')
-            draw.text(point_1, str(index), font=font, fill='red')
-
-        result.show()
+        display_ui(image, locations, classes, scores)
 
 
 if __name__ == '__main__':
