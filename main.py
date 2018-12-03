@@ -32,6 +32,11 @@ def display_ui(image, locations, classes, scores):
     result.show()
 
 
+def display_resize_image(images):
+    img = Image.fromarray(np.uint8(images[0]))
+    img.show()
+
+
 def main():
     graph = tf.Graph()
 
@@ -46,20 +51,33 @@ def main():
         saver = tf.train.import_meta_graph('models/ssd_mobilenet_v2_coco_2018_03_29/model.ckpt.meta')
         saver.restore(sess, 'models/ssd_mobilenet_v2_coco_2018_03_29/model.ckpt')
 
+        #  產生 tensorboard 報告  #
         # tf.summary.FileWriter("tensor_board/", graph=graph)
 
         input_image = graph.get_tensor_by_name('image_tensor:0')
 
-        boxes_t = graph.get_tensor_by_name('detection_boxes:0')
-        scores_t = graph.get_tensor_by_name('detection_scores:0')
-        num_dets_t = graph.get_tensor_by_name('num_detections:0')
-        classes_t = graph.get_tensor_by_name('detection_classes:0')
+        #  輸出 位置、分數、分類  #
+        # boxes_t = graph.get_tensor_by_name('detection_boxes:0')
+        # scores_t = graph.get_tensor_by_name('detection_scores:0')
+        # num_dets_t = graph.get_tensor_by_name('num_detections:0')
+        # classes_t = graph.get_tensor_by_name('detection_classes:0')
+        #
+        # locations, scores, num_dets, classes = sess.run([boxes_t, scores_t, num_dets_t, classes_t],
+        #                                                 feed_dict={input_image: np.expand_dims(image, 0)})
+        # locations = locations[0]
+        # display_ui(image, locations, classes, scores)
 
-        locations, scores, num_dets, classes = sess.run([boxes_t, scores_t, num_dets_t, classes_t],
-                                                        feed_dict={input_image: np.expand_dims(image, 0)})
-        locations = locations[0]
+        #  輸出 resize image 結果(300x300)  #
+        # resize_img_t = graph.get_tensor_by_name('Preprocessor/map/while/ResizeImage/Squeeze:0')
 
-        display_ui(image, locations, classes, scores)
+        # resize_images = sess.run([resize_img_t], feed_dict={input_image: np.expand_dims(image, 0)})
+        # display_resize_image(resize_images)
+
+        test_t = graph.get_tensor_by_name('Postprocessor/Decode/get_center_coordinates_and_sizes/unstack:0')
+        test = sess.run([test_t], feed_dict={input_image: np.expand_dims(image, 0)})
+
+        print('done')
+
 
 
 if __name__ == '__main__':
